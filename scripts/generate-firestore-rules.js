@@ -1,7 +1,9 @@
+import { existsSync } from 'node:fs';
 import { readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { parseDealersCsv } from './lib/csv.js';
 import { generateFirestoreRules } from './lib/firestore-rules.js';
+import { parseAllowedEmails } from '../src/shared/lead-options.js';
 
 const root = process.cwd();
 const configPath = resolve(root, 'config', 'lead-options.json');
@@ -10,12 +12,21 @@ const dealerPath = resolve(root, 'data', 'dealers.csv');
 const outputPath = resolve(root, 'firestore.rules');
 
 async function main() {
+  const environmentPath = resolve(root, '.env');
+  if (existsSync(environmentPath)) process.loadEnvFile(environmentPath);
+
   const [configText, template, dealerCsv] = await Promise.all([
     readFile(configPath, 'utf8'),
     readFile(templatePath, 'utf8'),
     readFile(dealerPath, 'utf8'),
   ]);
   const config = JSON.parse(configText);
+  config.access.allowedEmails = parseAllowedEmails(
+    [
+      ...(config.access.allowedEmails ?? []),
+      ...(process.env.VITE_FIREBASE_ALLOWED_EMAILS ?? '').split(','),
+    ].join(','),
+  );
   const dealers = parseDealersCsv(dealerCsv);
   const rules = generateFirestoreRules({ template, config, dealers });
   await writeFile(outputPath, rules, 'utf8');

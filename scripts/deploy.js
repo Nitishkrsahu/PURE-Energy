@@ -4,11 +4,14 @@ import { getDefaultProjectId } from './lib/firebase-project.js';
 
 if (existsSync('.env')) process.loadEnvFile('.env');
 
-const projectId = process.env.VITE_FIREBASE_PROJECT_ID || (await getDefaultProjectId(process.cwd()));
+const projectId =
+  process.env.VITE_FIREBASE_PROJECT_ID || (await getDefaultProjectId(process.cwd()));
 delete process.env.FIRESTORE_EMULATOR_HOST;
 
 if (!projectId) {
-  console.error('Set VITE_FIREBASE_PROJECT_ID in .env or configure a default project in .firebaserc.');
+  console.error(
+    'Set VITE_FIREBASE_PROJECT_ID in .env or configure a default project in .firebaserc.',
+  );
   process.exitCode = 1;
 } else {
   if (!process.env.FIREBASE_HOSTING_UPLOAD_CONCURRENCY) {

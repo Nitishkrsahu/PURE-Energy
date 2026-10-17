@@ -22,7 +22,7 @@ For a local UI walkthrough without Firebase, set `VITE_ENABLE_DEMO_MODE=true` in
 
 1. Create a Firebase project, register a Web app, and create its Cloud Firestore database in the `asia-south1` region in the Firebase Console.
 2. In Authentication, enable Google sign-in. Add the Hosting domain (`<project-id>.web.app`) to authorized domains if Firebase does not add it automatically.
-3. Copy the Web app's API key and App ID into `.env`; set `VITE_FIREBASE_PROJECT_ID` to the Firebase project ID. `VITE_FIREBASE_AUTH_DOMAIN` is optional and defaults to `<project-id>.firebaseapp.com`.
+3. Copy the Web app's API key and App ID into `.env`; set `VITE_FIREBASE_PROJECT_ID` to the Firebase project ID. `VITE_FIREBASE_AUTH_DOMAIN` is optional and defaults to `<project-id>.firebaseapp.com`. To approve additional verified Google accounts, add their comma-separated email addresses to `VITE_FIREBASE_ALLOWED_EMAILS` in `.env`.
 4. Install the Firebase CLI and sign in once:
 
 	```powershell
@@ -38,7 +38,7 @@ For a local UI walkthrough without Firebase, set `VITE_ENABLE_DEMO_MODE=true` in
 
 	The command regenerates Firestore rules from `data/dealers.csv` and `config/lead-options.json`, builds the app, then deploys rules and Hosting to the project ID in `.env`. The live URL is `https://<project-id>.web.app`.
 
-The Firebase Web API key and App ID identify the client app; they are not service-account secrets. Keep `.env` and service-account JSON files out of Git. Never put a service-account key in browser code or the repository. Firestore rules and verified-email access checks protect lead data. By default, only verified `purenergy.co.in` accounts can sign in; an explicitly authorized project owner can add an email to `access.allowedEmails` in `config/lead-options.json` and redeploy. Do not open access just to make a public demo. A reviewer using a different email needs that authorization to sign in; they can still clone the repo and run the local-only demo to inspect the UI and code.
+The Firebase Web API key and App ID identify the client app; they are not service-account secrets. Keep `.env` and service-account JSON files out of Git. Never put a service-account key in browser code or the repository. Firestore rules and verified-email access checks protect lead data. By default, only verified `purenergy.co.in` accounts can sign in; explicitly authorized accounts can be added to `access.allowedEmails` in `config/lead-options.json` or the comma-separated `VITE_FIREBASE_ALLOWED_EMAILS` variable in `.env`. The same allowlist is applied to the app and generated Firestore rules by `npm run deploy`. Each allowlisted account can read and modify lead records, so only add addresses authorized for that data. A reviewer using a different email needs that authorization to sign in; they can still clone the repo and run the local-only demo to inspect the UI and code.
 
 New web leads are saved to `leads` with their dealer assignment. A transaction also creates a `mobileIndex/{10-digit-phone}` document so two submissions cannot claim the same mobile. Verified company-domain users and explicitly allowlisted emails from `config/lead-options.json` can read lead data; status values come from the same configuration.
 
