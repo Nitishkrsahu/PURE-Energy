@@ -87,7 +87,7 @@ export default function LeadForm({ onClose, onSubmit, submitting }) {
                 onChange={updateField}
                 placeholder="10-digit mobile"
                 maxLength={20}
-                pattern="\+?[0-9][0-9\s().-]*"
+                pattern="\+?[0-9][0-9\s\(\)\.\-]*"
                 title="Enter a 10-digit Indian mobile number, optionally with +91."
                 aria-describedby="mobile-help"
               />
