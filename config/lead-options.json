@@ -1,0 +1,29 @@
+{
+  "plantLocation": "Kandi, Telangana",
+  "validation": {
+    "maxNameLength": 120,
+    "maxLeadIdLength": 120
+  },
+  "products": ["PuREPower Home 3kWh", "PuREPower Home 5kWh", "PuREPower Commercial 10kWh"],
+  "legacyProductAliases": {
+    "PuREPower Home 3kWh": ["Pure power 3 kwh"],
+    "PuREPower Home 5kWh": ["Pure power 5 kwh"],
+    "PuREPower Commercial 10kWh": ["Pure power commercial 10 kwh"]
+  },
+  "sources": ["Website", "Voice Agent", "WhatsApp", "Dealer Walk-in"],
+  "statuses": ["New", "Contacted", "Converted", "Lost"],
+  "leadMetrics": {
+    "initialStatus": "New",
+    "conversionStatus": "Converted",
+    "openStatuses": ["New", "Contacted"]
+  },
+  "fallbackDealer": {
+    "dealerId": "INHOUSE",
+    "dealerName": "In-house Sales",
+    "city": "Unmatched areas"
+  },
+  "access": {
+    "allowedDomains": ["purenergy.co.in"],
+    "allowedEmails": []
+  }
+}

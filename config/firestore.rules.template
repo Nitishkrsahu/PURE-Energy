@@ -1,0 +1,83 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email is string
+        && ({{EMAIL_POLICY}});
+    }
+
+    function validStatus(status) {
+      return status in {{STATUSES}};
+    }
+
+    function validPhone(phone) {
+      return phone is string && phone.matches('^[6-9][0-9]{9}$');
+    }
+
+    function validPincode(pincode) {
+      return pincode is string && pincode.matches('^[1-9][0-9]{5}$');
+    }
+
+    function validAssignment(data) {
+      return {{DEALER_ASSIGNMENTS}}
+        || (data.dealerId == {{FALLBACK_ID}}
+          && data.dealerName == {{FALLBACK_NAME}}
+          && !data.pincode.matches({{COVERED_PINCODES_PATTERN}}));
+    }
+
+    function validLead(data) {
+      return data.keys().hasOnly([
+          'name', 'phone', 'pincode', 'product', 'source', 'dealerId', 'dealerName',
+          'status', 'createdOn', 'sourceType', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasAll([
+          'name', 'phone', 'pincode', 'product', 'source', 'dealerId', 'dealerName',
+          'status', 'createdOn', 'sourceType', 'createdAt', 'updatedAt'
+        ])
+        && data.name is string && data.name.size() > 0 && data.name.size() <= {{MAX_NAME_LENGTH}}
+        && data.name.matches('.*[^\\s].*')
+        && validPhone(data.phone)
+        && validPincode(data.pincode)
+        && data.product in {{PRODUCTS}}
+        && data.source in {{SOURCES}}
+        && data.sourceType == 'web'
+        && validAssignment(data)
+        && validStatus(data.status)
+        && data.createdOn is string && data.createdOn.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && data.createdAt == request.time && data.updatedAt == request.time;
+    }
+
+    match /leads/{leadId} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && validLead(request.resource.data)
+        && request.resource.data.status == {{INITIAL_STATUS}}
+        && existsAfter(/databases/$(database)/documents/mobileIndex/$(request.resource.data.phone))
+        && getAfter(/databases/$(database)/documents/mobileIndex/$(request.resource.data.phone)).data.leadId == leadId;
+      allow update: if signedIn()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt'])
+        && validStatus(request.resource.data.status)
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if false;
+    }
+
+    match /mobileIndex/{phone} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && validPhone(phone)
+        && request.resource.data.keys().hasOnly(['leadId', 'phone'])
+        && request.resource.data.leadId is string
+        && request.resource.data.phone == phone
+        && !exists(/databases/$(database)/documents/mobileIndex/$(phone))
+        && existsAfter(/databases/$(database)/documents/leads/$(request.resource.data.leadId))
+        && getAfter(/databases/$(database)/documents/leads/$(request.resource.data.leadId)).data.phone == phone;
+      allow update, delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

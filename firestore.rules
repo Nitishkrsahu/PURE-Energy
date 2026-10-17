@@ -1,0 +1,92 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email is string
+        && (request.auth.token.email.matches('^[^@]+@purenergy\\.co\\.in$'));
+    }
+
+    function validStatus(status) {
+      return status in ['New', 'Contacted', 'Converted', 'Lost'];
+    }
+
+    function validPhone(phone) {
+      return phone is string && phone.matches('^[6-9][0-9]{9}$');
+    }
+
+    function validPincode(pincode) {
+      return pincode is string && pincode.matches('^[1-9][0-9]{5}$');
+    }
+
+    function validAssignment(data) {
+      return (data.dealerId == 'D01' && data.dealerName == 'Sri Sai Power Solutions' && data.pincode.matches('^500[0-9]{3}$'))
+        || (data.dealerId == 'D02' && data.dealerName == 'Kandi Energy Point' && data.pincode.matches('^502[0-9]{3}$'))
+        || (data.dealerId == 'D03' && data.dealerName == 'Warangal Green Systems' && data.pincode.matches('^506[0-9]{3}$'))
+        || (data.dealerId == 'D04' && data.dealerName == 'Karimnagar Solar Hub' && data.pincode.matches('^505[0-9]{3}$'))
+        || (data.dealerId == 'D05' && data.dealerName == 'Vizag Home Power' && data.pincode.matches('^530[0-9]{3}$'))
+        || (data.dealerId == 'D05' && data.dealerName == 'Vizag Home Power' && data.pincode.matches('^531[0-9]{3}$'))
+        || (data.dealerId == 'D06' && data.dealerName == 'Krishna Energy Store' && data.pincode.matches('^520[0-9]{3}$'))
+        || (data.dealerId == 'D06' && data.dealerName == 'Krishna Energy Store' && data.pincode.matches('^521[0-9]{3}$'))
+        || (data.dealerId == 'D07' && data.dealerName == 'Guntur Battery World' && data.pincode.matches('^522[0-9]{3}$'))
+        || (data.dealerId == 'D08' && data.dealerName == 'Tirupati PowerHouse' && data.pincode.matches('^517[0-9]{3}$'))
+        || (data.dealerId == 'INHOUSE'
+          && data.dealerName == 'In-house Sales'
+          && !data.pincode.matches('^(500|502|506|505|530|531|520|521|522|517)[0-9]{3}$'));
+    }
+
+    function validLead(data) {
+      return data.keys().hasOnly([
+          'name', 'phone', 'pincode', 'product', 'source', 'dealerId', 'dealerName',
+          'status', 'createdOn', 'sourceType', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasAll([
+          'name', 'phone', 'pincode', 'product', 'source', 'dealerId', 'dealerName',
+          'status', 'createdOn', 'sourceType', 'createdAt', 'updatedAt'
+        ])
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 120
+        && data.name.matches('.*[^\\s].*')
+        && validPhone(data.phone)
+        && validPincode(data.pincode)
+        && data.product in ['PuREPower Home 3kWh', 'PuREPower Home 5kWh', 'PuREPower Commercial 10kWh']
+        && data.source in ['Website', 'Voice Agent', 'WhatsApp', 'Dealer Walk-in']
+        && data.sourceType == 'web'
+        && validAssignment(data)
+        && validStatus(data.status)
+        && data.createdOn is string && data.createdOn.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && data.createdAt == request.time && data.updatedAt == request.time;
+    }
+
+    match /leads/{leadId} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && validLead(request.resource.data)
+        && request.resource.data.status == 'New'
+        && existsAfter(/databases/$(database)/documents/mobileIndex/$(request.resource.data.phone))
+        && getAfter(/databases/$(database)/documents/mobileIndex/$(request.resource.data.phone)).data.leadId == leadId;
+      allow update: if signedIn()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt'])
+        && validStatus(request.resource.data.status)
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if false;
+    }
+
+    match /mobileIndex/{phone} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && validPhone(phone)
+        && request.resource.data.keys().hasOnly(['leadId', 'phone'])
+        && request.resource.data.leadId is string
+        && request.resource.data.phone == phone
+        && !exists(/databases/$(database)/documents/mobileIndex/$(phone))
+        && existsAfter(/databases/$(database)/documents/leads/$(request.resource.data.leadId))
+        && getAfter(/databases/$(database)/documents/leads/$(request.resource.data.leadId)).data.phone == phone;
+      allow update, delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

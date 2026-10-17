@@ -1,0 +1,41 @@
+lead_id,action,reason
+L1001,imported,no changes required
+L1002,imported,no changes required
+L1003,imported,no changes required
+L1004,fixed,normalized mobile to 10 digits
+L1005,imported,no changes required
+L1006,fixed,normalized mobile to 10 digits
+L1007,imported,no changes required
+L1008,imported,no changes required
+L1009,rejected,mobile must be a valid 10-digit Indian number
+L1010,imported,no changes required
+L1011,imported,no changes required
+L1012,rejected,pincode must contain exactly 6 digits and cannot start with zero
+L1013,imported,no changes required
+L1014,imported,no changes required
+L1015,assigned_inhouse,no dealer covers pincode prefix 110
+L1016,imported,no changes required
+L1017,imported,no changes required
+L1018,rejected,created_on is not a valid YYYY-MM-DD date
+L1019,imported,no changes required
+L1020,fixed,normalized status casing/spacing
+L1021,imported,no changes required
+L1022,imported,no changes required
+L1023,fixed,normalized product name
+L1024,imported,no changes required
+L1025,imported,no changes required
+L1026,rejected,missing name
+L1027,imported,no changes required
+L1028,fixed,normalized source casing/spacing
+L1029,imported,no changes required
+L1030,imported,no changes required
+L1031,imported,no changes required
+L1032,imported,no changes required
+L1033,imported,no changes required
+L1034,imported,no changes required
+L1035,imported,no changes required
+L1036,merged,duplicate mobile merged into L1003 (input row 4)
+L1037,merged,duplicate mobile merged into L1010 (input row 11)
+L1038,merged,duplicate mobile merged into L1031 (input row 32)
+L1039,merged,duplicate mobile merged into L1007 (input row 8)
+L1033,merged,duplicate mobile merged into L1013 (input row 14); duplicate lead_id also present
