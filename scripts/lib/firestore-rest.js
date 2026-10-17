@@ -103,7 +103,8 @@ export async function importLeadsToFirestore(leads, { serviceAccountPath, projec
   }
 
   const token = await getAccessToken(serviceAccount);
-  const root = `https://firestore.googleapis.com/v1/projects/${resolvedProjectId}/databases/(default)/documents`;
+  const documentRoot = `projects/${resolvedProjectId}/databases/(default)/documents`;
+  const root = `https://firestore.googleapis.com/v1/${documentRoot}`;
   let imported = 0;
   let alreadyPresent = 0;
 
@@ -130,12 +131,12 @@ export async function importLeadsToFirestore(leads, { serviceAccountPath, projec
       body: JSON.stringify({
         writes: [
           {
-            update: { name: `${root}/${leadPath}`, fields: encodeFields(lead) },
+            update: { name: `${documentRoot}/${leadPath}`, fields: encodeFields(lead) },
             currentDocument: { exists: false },
           },
           {
             update: {
-              name: `${root}/${indexPath}`,
+              name: `${documentRoot}/${indexPath}`,
               fields: { leadId: { stringValue: documentId }, phone: { stringValue: lead.phone } },
             },
             currentDocument: { exists: false },

@@ -1,7 +1,14 @@
 import assert from 'node:assert/strict';
 import { createVerify, generateKeyPairSync } from 'node:crypto';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import test from 'node:test';
-import { firestoreRequest, getAccessToken } from '../scripts/lib/firestore-rest.js';
+import {
+  firestoreRequest,
+  getAccessToken,
+  importLeadsToFirestore,
+} from '../scripts/lib/firestore-rest.js';
 
 test('exchanges a signed service-account assertion for an OAuth access token', async () => {
   const { privateKey, publicKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
@@ -61,5 +68,69 @@ test('only mobile-index lookups treat Firestore 404 as an absent document', asyn
     );
   } finally {
     globalThis.fetch = originalFetch;
+  }
+});
+
+test('uses Firestore resource names in atomic lead and mobile-index writes', async () => {
+  const { privateKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
+  const directory = await mkdtemp(join(tmpdir(), 'firestore-rest-'));
+  const serviceAccountPath = join(directory, 'service-account.json');
+  const originalFetch = globalThis.fetch;
+  const commits = [];
+
+  await writeFile(
+    serviceAccountPath,
+    JSON.stringify({
+      client_email: 'importer@example.iam.gserviceaccount.com',
+      private_key: privateKey.export({ format: 'pem', type: 'pkcs8' }).toString(),
+    }),
+  );
+  globalThis.fetch = async (url, options = {}) => {
+    if (url === 'https://oauth2.googleapis.com/token') {
+      return new Response(JSON.stringify({ access_token: 'test-access-token' }), { status: 200 });
+    }
+    if (url.endsWith(':commit')) {
+      commits.push(JSON.parse(options.body));
+      return new Response('{}', { status: 200 });
+    }
+    return new Response(JSON.stringify({ error: { message: 'Document not found' } }), {
+      status: 404,
+      statusText: 'Not Found',
+    });
+  };
+
+  try {
+    const result = await importLeadsToFirestore(
+      [
+        {
+          leadId: 'L1001',
+          sourceRow: 1,
+          phone: '9876543210',
+          pincode: '502285',
+          product: 'PuREPower Home 5kWh',
+          source: 'Website',
+          dealerId: 'D02',
+          dealerName: 'Kandi Energy Point',
+          status: 'New',
+          createdOn: '2026-10-14',
+          sourceType: 'legacy',
+        },
+      ],
+      { serviceAccountPath, projectId: 'test-project' },
+    );
+
+    assert.deepEqual(result, { imported: 1, alreadyPresent: 0 });
+    assert.equal(commits.length, 1);
+    assert.equal(
+      commits[0].writes[0].update.name,
+      'projects/test-project/databases/(default)/documents/leads/legacy-001-L1001',
+    );
+    assert.equal(
+      commits[0].writes[1].update.name,
+      'projects/test-project/databases/(default)/documents/mobileIndex/9876543210',
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+    await rm(directory, { recursive: true, force: true });
   }
 });
