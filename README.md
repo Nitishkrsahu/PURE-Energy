@@ -63,7 +63,3 @@ Run checks with `npm test`, `npm run test:rules` (Firebase CLI and emulator down
 - A repeated `lead_id` with a different mobile is retained under a row-based Firestore document ID and called out in the report. The final repeated `L1033` row also repeats a mobile, so it is merged and both collisions are noted. Existing source lead IDs remain in each imported document.
 - The 40-row file contains duplicate mobiles, a repeated `L1033`, a missing name, a five-digit mobile, a four-digit pincode, an impossible date (`31/09/2026`), inconsistent product/source/status casing, and a valid pincode (`110001`) with no listed dealer.
 - Current reconciliation: 25 imported unchanged, 5 fixed, 5 merged, 4 rejected, and 1 assigned to in-house sales. Every input row has one report row.
-
-## Submission checklist
-
-Replace the personal and URL placeholders in `submission.json`, create and publish the public GitHub repository, configure and deploy Firebase Hosting, record the 3-5 minute demo with your voice, and send the required email to `hr@purenergy.co.in` with only the repository URL in its body. Keep the repository, app, and recording available for 30 days. Do not publish a service-account key; include the supplied company data only as permitted by the assignment. Recruiters can review the code from GitHub; to run the Firebase-backed live app they need an approved verified account.
